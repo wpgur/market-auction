@@ -24,6 +24,7 @@ import randomColor from '../../../util/randomColor';
 import Skeleton from '../../../components/Skeleton/Skeleton';
 import toast, { Toaster } from 'react-hot-toast';
 import toastStyle from '../../../util/toastConfig';
+import { useRouter } from 'next/router';
 
 type Props = {
   nft: NFT;
@@ -33,6 +34,12 @@ type Props = {
 const [randomColor1, randomColor2] = [randomColor(), randomColor()];
 
 export default function TokenPage({ nft, contractMetadata }: Props) {
+  const router = useRouter();
+  const currentUrl = router.asPath;
+  const regex = /\/token\/(.+?)\//;
+  const match = currentUrl.match(regex);
+  const token = match && match[1]; // 추출된 토큰 값
+
   const [bidValue, setBidValue] = useState<string>();
 
   // Connect to marketplace smart contract
@@ -205,41 +212,51 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   console.log('bidder(From) : ' + event.data.bidder);
                   console.log('bidder(To) : ' + MARKETPLACE_ADDRESS);
                   console.log('bidder(Index) : ' + event.data.assetContract);
-                  return (
-                    <div
-                      key={event.transaction.transactionHash}
-                      className={styles.eventsContainer}
-                    >
-                      <div className={styles.eventContainer}>
-                        <p className={styles.traitName}>Index</p>
-                        <p className={styles.traitValue}>
-                          {event.data.assetContract?.slice(0, 4)}...
-                          {event.data.assetContract?.slice(-2)}
-                        </p>
+                  console.log('bidder(PageNFT) : ' + token);
+                  // 특정 토큰 값에 대한 조건문 추가
+                  if (event.data.assetContract === token) {
+                    return (
+                      <div
+                        key={event.transaction.transactionHash}
+                        className={styles.eventsContainer}
+                      >
+                        <div className={styles.eventContainer}>
+                          <p className={styles.traitName}>Index</p>
+                          <p className={styles.traitValue}>
+                            {event.data.assetContract?.slice(0, 4)}...
+                            {event.data.assetContract?.slice(-2)}
+                          </p>
+                        </div>
+                        <div className={styles.eventContainer}>
+                          <p className={styles.traitName}>From</p>
+                          <p className={styles.traitValue}>
+                            {event.data.bidder?.slice(0, 4)}...
+                            {event.data.bidder?.slice(-2)}
+                          </p>
+                        </div>
+                        <div className={styles.eventContainer}>
+                          <p className={styles.traitName}>To</p>
+                          <p className={styles.traitValue}>
+                            {MARKETPLACE_ADDRESS?.slice(0, 4)}...
+                            {MARKETPLACE_ADDRESS?.slice(-2)}
+                          </p>
+                        </div>
+                        <div className={styles.eventContainer}>
+                          <p className={styles.traitName}>bidAmount</p>
+                          <p className={styles.traitValue}>
+                            {(
+                              parseInt(event.data.bidAmount['_hex']) /
+                              10000000000000000
+                            )
+                              .toFixed(10)
+                              .replace(/\.?0+$/, '')}
+                          </p>
+                        </div>
                       </div>
-
-                      <div className={styles.eventContainer}>
-                        <p className={styles.traitName}>From</p>
-                        <p className={styles.traitValue}>
-                          {event.data.bidder?.slice(0, 4)}...
-                          {event.data.bidder?.slice(-2)}
-                        </p>
-                      </div>
-                      <div className={styles.eventContainer}>
-                        <p className={styles.traitName}>To</p>
-                        <p className={styles.traitValue}>
-                          {MARKETPLACE_ADDRESS?.slice(0, 4)}...
-                          {MARKETPLACE_ADDRESS?.slice(-2)}
-                        </p>
-                      </div>
-                      <div className={styles.eventContainer}>
-                        <p className={styles.traitName}>bidAmount</p>
-                        <p className={styles.traitValue}>
-                          {event.data.bidAmount['_hex']}
-                        </p>
-                      </div>
-                    </div>
-                  );
+                    );
+                  } else {
+                    return null; // 조건에 맞지 않는 경우 null 반환하여 해당 이벤트를 렌더링하지 않음
+                  }
                 })}
               </div>
             </div>
@@ -435,7 +452,6 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const contract = await sdk.getContract(NFT_COLLECTION_ADDRESS);
 
   const nfts = await contract.erc721.getAll();
-
   const paths = nfts.map((nft) => {
     return {
       params: {
