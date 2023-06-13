@@ -3,26 +3,27 @@ import {
   ThirdwebNftMedia,
   useContract,
   useContractEvents,
+  useContractRead,
   useValidDirectListings,
   useValidEnglishAuctions,
   Web3Button,
-} from "@thirdweb-dev/react";
-import React, { useState } from "react";
-import Container from "../../../components/Container/Container";
-import { GetStaticProps, GetStaticPaths } from "next";
-import { NFT, ThirdwebSDK } from "@thirdweb-dev/sdk";
+} from '@thirdweb-dev/react';
+import React, { useState } from 'react';
+import Container from '../../../components/Container/Container';
+import { GetStaticProps, GetStaticPaths } from 'next';
+import { Marketplace, NFT, ThirdwebSDK } from '@thirdweb-dev/sdk';
 import {
   ETHERSCAN_URL,
   MARKETPLACE_ADDRESS,
   NETWORK,
   NFT_COLLECTION_ADDRESS,
-} from "../../../const/contractAddresses";
-import styles from "../../../styles/Token.module.css";
-import Link from "next/link";
-import randomColor from "../../../util/randomColor";
-import Skeleton from "../../../components/Skeleton/Skeleton";
-import toast, { Toaster } from "react-hot-toast";
-import toastStyle from "../../../util/toastConfig";
+} from '../../../const/contractAddresses';
+import styles from '../../../styles/Token.module.css';
+import Link from 'next/link';
+import randomColor from '../../../util/randomColor';
+import Skeleton from '../../../components/Skeleton/Skeleton';
+import toast, { Toaster } from 'react-hot-toast';
+import toastStyle from '../../../util/toastConfig';
 
 type Props = {
   nft: NFT;
@@ -37,11 +38,12 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
   // Connect to marketplace smart contract
   const { contract: marketplace, isLoading: loadingContract } = useContract(
     MARKETPLACE_ADDRESS,
-    "marketplace-v3"
+    'marketplace-v3'
   );
 
   // Connect to NFT Collection smart contract
   const { contract: nftCollection } = useContract(NFT_COLLECTION_ADDRESS);
+  const { contract: nftCollection2 } = useContract(MARKETPLACE_ADDRESS);
 
   const { data: directListing, isLoading: loadingDirect } =
     useValidDirectListings(marketplace, {
@@ -58,12 +60,22 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
 
   // Load historical transfer events: TODO - more event types like sale
   const { data: transferEvents, isLoading: loadingTransferEvents } =
-    useContractEvents(nftCollection, "Transfer", {
+    useContractEvents(nftCollection, 'Transfer', {
       queryFilter: {
         filters: {
           tokenId: nft.metadata.id,
         },
-        order: "desc",
+        order: 'desc',
+      },
+    });
+
+  const { data: transferEvents2, isLoading: loadingTransferEvents2 } =
+    useContractEvents(nftCollection2, 'NewBid', {
+      queryFilter: {
+        filters: {
+          tokenId: nft.metadata.id,
+        },
+        order: 'desc',
       },
     });
 
@@ -71,9 +83,9 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
     let txResult;
     if (!bidValue) {
       toast(`Please enter a bid value`, {
-        icon: "❌",
+        icon: '❌',
         style: toastStyle,
-        position: "bottom-center",
+        position: 'bottom-center',
       });
       return;
     }
@@ -83,16 +95,18 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
         auctionListing[0].id,
         bidValue
       );
+      console.log('auctionListing', auctionListing?.[0]);
     } else if (directListing?.[0]) {
       txResult = await marketplace?.offers.makeOffer({
         assetContractAddress: NFT_COLLECTION_ADDRESS,
         tokenId: nft.metadata.id,
         totalPrice: bidValue,
       });
+      console.log('directListing', directListing?.[0]);
     } else {
-      throw new Error("No valid listing found for this NFT");
+      throw new Error('No valid listing found for this NFT');
     }
-
+    console.log(txResult);
     return txResult;
   }
 
@@ -109,7 +123,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
         1
       );
     } else {
-      throw new Error("No valid listing found for this NFT");
+      throw new Error('No valid listing found for this NFT');
     }
     return txResult;
   }
@@ -137,7 +151,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                     <div className={styles.traitContainer} key={key}>
                       <p className={styles.traitName}>{key}</p>
                       <p className={styles.traitValue}>
-                        {value?.toString() || ""}
+                        {value?.toString() || ''}
                       </p>
                     </div>
                   )
@@ -147,50 +161,86 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
               <h3 className={styles.descriptionTitle}>History</h3>
 
               <div className={styles.traitsContainer}>
-                {transferEvents?.map((event, index) => (
-                  <div
-                    key={event.transaction.transactionHash}
-                    className={styles.eventsContainer}
-                  >
-                    <div className={styles.eventContainer}>
-                      <p className={styles.traitName}>Event</p>
-                      <p className={styles.traitValue}>
-                        {
-                          // if last event in array, then it's a mint
-                          index === transferEvents.length - 1
-                            ? "Mint"
-                            : "Transfer"
-                        }
-                      </p>
-                    </div>
+                {transferEvents?.map((event, index) => {
+                  return (
+                    <div
+                      key={event.transaction.transactionHash}
+                      className={styles.eventsContainer}
+                    >
+                      <div className={styles.eventContainer}>
+                        <p className={styles.traitName}>Event</p>
+                        <p className={styles.traitValue}>
+                          {index === transferEvents.length - 1
+                            ? 'Mint'
+                            : 'Transfer'}
+                        </p>
+                      </div>
 
-                    <div className={styles.eventContainer}>
-                      <p className={styles.traitName}>From</p>
-                      <p className={styles.traitValue}>
-                        {event.data.from?.slice(0, 4)}...
-                        {event.data.from?.slice(-2)}
-                      </p>
-                    </div>
+                      <div className={styles.eventContainer}>
+                        <p className={styles.traitName}>From</p>
+                        <p className={styles.traitValue}>
+                          {event.data.from?.slice(0, 4)}...
+                          {event.data.from?.slice(-2)}
+                        </p>
+                      </div>
 
-                    <div className={styles.eventContainer}>
-                      <p className={styles.traitName}>To</p>
-                      <p className={styles.traitValue}>
-                        {event.data.to?.slice(0, 4)}...
-                        {event.data.to?.slice(-2)}
-                      </p>
+                      <div className={styles.eventContainer}>
+                        <Link
+                          className={styles.txHashArrow}
+                          href={`${ETHERSCAN_URL}/tx/${event.transaction.transactionHash}`}
+                          target="_blank"
+                        >
+                          ↗
+                        </Link>
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+              <h3 className={styles.descriptionTitle}>History BID</h3>
+              <div className={styles.traitsContainer}>
+                {transferEvents2?.map((event, index) => {
+                  console.log(event.transaction.transactionHash); // 개발자 도구의 콘솔에 출력됨
+                  console.log(event.data);
+                  console.log('bidder(From) : ' + event.data.bidder);
+                  console.log('bidder(To) : ' + MARKETPLACE_ADDRESS);
+                  console.log('bidder(Index) : ' + event.data.assetContract);
+                  return (
+                    <div
+                      key={event.transaction.transactionHash}
+                      className={styles.eventsContainer}
+                    >
+                      <div className={styles.eventContainer}>
+                        <p className={styles.traitName}>Index</p>
+                        <p className={styles.traitValue}>
+                          {event.data.assetContract?.slice(0, 4)}...
+                          {event.data.assetContract?.slice(-2)}
+                        </p>
+                      </div>
 
-                    <div className={styles.eventContainer}>
-                      <Link
-                        className={styles.txHashArrow}
-                        href={`${ETHERSCAN_URL}/tx/${event.transaction.transactionHash}`}
-                        target="_blank"
-                      >
-                        ↗
-                      </Link>
+                      <div className={styles.eventContainer}>
+                        <p className={styles.traitName}>From</p>
+                        <p className={styles.traitValue}>
+                          {event.data.bidder?.slice(0, 4)}...
+                          {event.data.bidder?.slice(-2)}
+                        </p>
+                      </div>
+                      <div className={styles.eventContainer}>
+                        <p className={styles.traitName}>To</p>
+                        <p className={styles.traitValue}>
+                          {MARKETPLACE_ADDRESS?.slice(0, 4)}...
+                          {MARKETPLACE_ADDRESS?.slice(-2)}
+                        </p>
+                      </div>
+                      <div className={styles.eventContainer}>
+                        <p className={styles.traitName}>bidAmount</p>
+                        <p className={styles.traitValue}>
+                          {event.data.bidAmount['_hex']}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -239,15 +289,15 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                       {directListing && directListing[0] ? (
                         <>
                           {directListing[0]?.currencyValuePerToken.displayValue}
-                          {" " + directListing[0]?.currencyValuePerToken.symbol}
+                          {' ' + directListing[0]?.currencyValuePerToken.symbol}
                         </>
                       ) : auctionListing && auctionListing[0] ? (
                         <>
                           {auctionListing[0]?.buyoutCurrencyValue.displayValue}
-                          {" " + auctionListing[0]?.buyoutCurrencyValue.symbol}
+                          {' ' + auctionListing[0]?.buyoutCurrencyValue.symbol}
                         </>
                       ) : (
-                        "Not for sale"
+                        'Not for sale'
                       )}
                     </>
                   )}
@@ -269,7 +319,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                               auctionListing[0]?.minimumBidCurrencyValue
                                 .displayValue
                             }
-                            {" " +
+                            {' ' +
                               auctionListing[0]?.minimumBidCurrencyValue.symbol}
                           </div>
                         </>
@@ -290,16 +340,16 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   className={styles.btn}
                   onSuccess={() => {
                     toast(`Purchase success!`, {
-                      icon: "✅",
+                      icon: '✅',
                       style: toastStyle,
-                      position: "bottom-center",
+                      position: 'bottom-center',
                     });
                   }}
                   onError={(e) => {
                     toast(`Purchase failed! Reason: ${e.message}`, {
-                      icon: "❌",
+                      icon: '❌',
                       style: toastStyle,
-                      position: "bottom-center",
+                      position: 'bottom-center',
                     });
                   }}
                 >
@@ -329,17 +379,17 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   className={styles.btn}
                   onSuccess={() => {
                     toast(`Bid success!`, {
-                      icon: "✅",
+                      icon: '✅',
                       style: toastStyle,
-                      position: "bottom-center",
+                      position: 'bottom-center',
                     });
                   }}
                   onError={(e) => {
                     console.log(e);
                     toast(`Bid failed! Reason: ${e.message}`, {
-                      icon: "❌",
+                      icon: '❌',
                       style: toastStyle,
-                      position: "bottom-center",
+                      position: 'bottom-center',
                     });
                   }}
                 >
@@ -367,6 +417,7 @@ export const getStaticProps: GetStaticProps = async (context) => {
 
   try {
     contractMetadata = await contract.metadata.get();
+    contractMetadata.description = 'Your description here';
   } catch (e) {}
 
   return {
@@ -396,6 +447,6 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
   return {
     paths,
-    fallback: "blocking", // can also be true or 'blocking'
+    fallback: 'blocking', // can also be true or 'blocking'
   };
 };
