@@ -177,7 +177,6 @@ export default function SaleInfo({ nft }: Props) {
             step={0.000001}
             {...registerAuction('buyoutPrice')}
           />
-
           <Web3Button
             contractAddress={MARKETPLACE_ADDRESS}
             action={async () => {
