@@ -158,7 +158,7 @@ const Upload: NextPage = () => {
               ))}
             </div>
           ) : (
-            <p>Loading NFTs...</p>
+            <p>Loading NFTs..........</p>
           )}
         </>
       ) : (
