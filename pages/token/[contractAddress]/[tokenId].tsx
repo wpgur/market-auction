@@ -1,6 +1,7 @@
 import {
   MediaRenderer,
   ThirdwebNftMedia,
+  useAddress,
   useContract,
   useContractEvents,
   useContractRead,
@@ -99,7 +100,8 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
   const regex = /\/token\/(.+?)\//;
   const match = currentUrl.match(regex);
   const token = match && match[1]; // 추출된 토큰 값
-
+  const [isWinner, setIsWinner] = useState<boolean>(false);
+  const address = useAddress();
   const [bidValue, setBidValue] = useState<string>();
 
   // Connect to marketplace smart contract
@@ -517,6 +519,46 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                 >
                   Place bid
                 </Web3Button>
+                <div>
+                  {address === nft.owner ? (
+                    <button
+                      className={styles.btn}
+                      onClick={() => setIsWinner(true)}
+                    >
+                      최종 낙찰 하겠습니까?
+                    </button>
+                  ) : null}
+                </div>
+                {isWinner && (
+                  <Web3Button
+                    contractAddress={MARKETPLACE_ADDRESS}
+                    action={async () => {
+                      if (
+                        address !== '0x34f5f487c97Ae7643Af219495FcED9a965574C86'
+                      ) {
+                        throw new Error('아니다');
+                      }
+                      await buyListing();
+                    }}
+                    className={styles.btn}
+                    onSuccess={() => {
+                      toast(`Purchase success!`, {
+                        icon: '✅',
+                        style: toastStyle,
+                        position: 'bottom-center',
+                      });
+                    }}
+                    onError={(e) => {
+                      toast(`Purchase failed! Reason: ${e.message}`, {
+                        icon: '❌',
+                        style: toastStyle,
+                        position: 'bottom-center',
+                      });
+                    }}
+                  >
+                    Buy at asking price
+                  </Web3Button>
+                )}
               </>
             )}
           </div>
