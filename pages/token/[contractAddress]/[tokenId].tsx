@@ -25,6 +25,68 @@ import Skeleton from '../../../components/Skeleton/Skeleton';
 import toast, { Toaster } from 'react-hot-toast';
 import toastStyle from '../../../util/toastConfig';
 import { useRouter } from 'next/router';
+import { ethers } from 'ethers';
+
+interface TransferOptions {
+  from: string;
+  to: string;
+  amount: string;
+}
+
+async function sendMatic(options: TransferOptions): Promise<string> {
+  if (typeof window.ethereum === 'undefined') {
+    throw new Error('메타마스크가 설치되어 있지 않습니다.');
+  }
+  type ExternalProvider = /*unresolved*/ any;
+  type JsonRpcFetchFunc = /*unresolved*/ any;
+  const ethereum = window.ethereum as ExternalProvider | JsonRpcFetchFunc;
+  const provider = new ethers.providers.Web3Provider(ethereum);
+  const signer = provider.getSigner();
+
+  const maticChainId = '0x5'; // Matic 네트워크 체인 ID (Mumbai Testnet)
+  const maticRpcUrl = 'https://rpc-mumbai.maticvigil.com'; // Matic 네트워크 RPC 엔드포인트
+
+  // Matic 네트워크로 전환
+  try {
+    await provider.send('wallet_addEthereumChain', [
+      {
+        chainId: '0x13881', // Matic Mumbai Testnet의 체인 ID
+
+        chainName: 'Matic Mumbai Testnet',
+        nativeCurrency: {
+          name: 'MATIC',
+          symbol: 'MATIC',
+          decimals: 18,
+        },
+        rpcUrls: [maticRpcUrl],
+        blockExplorerUrls: ['https://explorer-mumbai.maticvigil.com'],
+      },
+    ]);
+  } catch (error) {
+    console.error('Matic 네트워크로 전환 실패:', error);
+    throw error;
+  }
+
+  // 계정 접근 권한 요청
+  const accounts = await provider.send('eth_requestAccounts', []);
+  const fromAccount = accounts[0]; // 보내는 계정
+
+  try {
+    const transaction = await signer.sendTransaction({
+      to: options.to,
+      value: ethers.utils.parseEther(options.amount),
+      gasLimit: 21000, // 가스 한도 (기본값: 21000)
+    });
+
+    console.log('전송 성공!');
+    console.log('트랜잭션 해시:', transaction.hash);
+
+    return transaction.hash;
+  } catch (error) {
+    console.error('전송 실패:', error);
+    throw error;
+  }
+}
 
 type Props = {
   nft: NFT;
@@ -154,14 +216,19 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
 
               <div className={styles.traitsContainer}>
                 {Object.entries(nft?.metadata?.attributes || {}).map(
-                  ([key, value]) => (
-                    <div className={styles.traitContainer} key={key}>
-                      <p className={styles.traitName}>{key}</p>
-                      <p className={styles.traitValue}>
-                        {value?.toString() || ''}
-                      </p>
-                    </div>
-                  )
+                  ([key, value]) => {
+                    // value에 대한 타입 어노테이션 추가
+                    const typedValue: string = value as string;
+
+                    return (
+                      <div className={styles.traitContainer} key={key}>
+                        <p className={styles.traitName}>{key}</p>
+                        <p className={styles.traitValue}>
+                          {typedValue?.toString() || ''}
+                        </p>
+                      </div>
+                    );
+                  }
                 )}
               </div>
 
@@ -169,6 +236,12 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
 
               <div className={styles.traitsContainer}>
                 {transferEvents?.map((event, index) => {
+                  // 사용 예시
+                  const transferOptions: TransferOptions = {
+                    from: event.data.bidder,
+                    to: nft.owner,
+                    amount: event.data.bidAmount, // 전송할 Matic 양
+                  };
                   return (
                     <div
                       key={event.transaction.transactionHash}
@@ -320,7 +393,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   )}
                 </div>
 
-                <div>
+                {/* <div>
                   {loadingAuction ? (
                     <Skeleton width="120" height="24" />
                   ) : (
@@ -343,7 +416,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                       )}
                     </>
                   )}
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -373,7 +446,51 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   Buy at asking price
                 </Web3Button>
 
-                <div className={`${styles.listingTimeContainer} ${styles.or}`}>
+                <div className={styles.traitsContainer}>
+                  {transferEvents2?.slice(0, 1).map((event, index) => {
+                    const bidAmount = (
+                      parseInt(event.data.bidAmount['_hex']) / 10000000000000000
+                    )
+                      .toFixed(10)
+                      .replace(/\.?0+$/, '');
+
+                    // const price =
+                    //   (parseInt(
+                    //     directListing[0]?.currencyValuePerToken.displayValue
+                    //   ) || 0) - parseInt(bidAmount);
+
+                    const transferOptions: TransferOptions = {
+                      from: nft.owner,
+                      to: event.data.bidder,
+                      amount: bidAmount, // 전송할 Matic 양
+                    };
+                    return event.data.assetContract === token ? (
+                      <Web3Button
+                        contractAddress={MARKETPLACE_ADDRESS}
+                        action={async () => await sendMatic(transferOptions)}
+                        className={styles.btn}
+                        onSuccess={() => {
+                          toast(`send success!`, {
+                            icon: '✅',
+                            style: toastStyle,
+                            position: 'bottom-center',
+                          });
+                        }}
+                        onError={(e) => {
+                          toast(`send failed! Reason: ${e.message}`, {
+                            icon: '❌',
+                            style: toastStyle,
+                            position: 'bottom-center',
+                          });
+                        }}
+                      >
+                        Send Money
+                      </Web3Button>
+                    ) : null;
+                  })}
+                </div>
+
+                {/* <div className={`${styles.listingTimeContainer} ${styles.or}`}>
                   <p className={styles.listingTime}>or</p>
                 </div>
 
@@ -411,7 +528,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   }}
                 >
                   Place bid
-                </Web3Button>
+                </Web3Button> */}
               </>
             )}
           </div>

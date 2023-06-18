@@ -9,12 +9,27 @@ import {
   useNFTs,
   ThirdwebNftMedia,
   useStorageUpload,
+  useContractWrite,
 } from '@thirdweb-dev/react';
 
 import type { NextPage } from 'next';
 import React, { useState } from 'react';
 import Container from '../components/Container/Container';
 import styles from '../styles/Upload.module.css';
+
+// export default function Component() {
+//   const { contract } = useContract("0xE44bC8e2c506b8FF6b820E1dC2502b7ba9f30d93");
+//   const { mutateAsync: mintTo, isLoading } = useContractWrite(contract, "mintTo")
+
+//   const call = async () => {
+//     try {
+//       const data = await mintTo({ args: [_to, _tokenURI] });
+//       console.info("contract call successs", data);
+//     } catch (err) {
+//       console.error("contract call failure", err);
+//     }
+//   }
+// }
 
 const Upload: NextPage = () => {
   //연결 되어있는 지갑 주소 가져오기
@@ -33,6 +48,11 @@ const Upload: NextPage = () => {
   const { data: nfts, isLoading: loading } = useNFTs(contract);
   // nft mint 즉 등록
   const { mutate: mintNft, isLoading: minting } = useMintNFT(contract);
+  // nft mint 즉 등록 2
+  const { mutateAsync: mintTo, isLoading } = useContractWrite(
+    contract,
+    'mintTo'
+  );
 
   //입력받은 name 변수 가공
   const [nftFormValues, setNftFormValues] = useState<NftFormValues>({
@@ -106,6 +126,22 @@ const Upload: NextPage = () => {
         },
       }
     );
+
+    // mintTo(
+    //   {
+    //     metadata: {
+    //       name,
+    //       image: uploadUrl[0], // IPFS URL을 사용합니다.
+    //       description,
+    //     },
+    //     to: address,
+    //   },
+    //   {
+    //     onSuccess(data) {
+    //       alert(`🚀 Successfully Minted NFT!`);
+    //     },
+    //   }
+    // );
   };
 
   return (
