@@ -68,8 +68,8 @@ export default function SaleInfo({ nft }: Props) {
         tokenId: nft.metadata.id,
         startDate: getLocalISOString(),
         endDate: new Date(),
-        floorPrice: '0.000001',
-        buyoutPrice: '0.000002',
+        floorPrice: '0.0000001',
+        buyoutPrice: '0.000001',
       },
     });
 
@@ -109,8 +109,8 @@ export default function SaleInfo({ nft }: Props) {
       tokenId: data.tokenId,
       buyoutBidAmount: data.buyoutPrice,
       minimumBidAmount: data.floorPrice,
-      // startTimestamp: new Date(data.startDate),
-      // endTimestamp: new Date(data.endDate),
+      startTimestamp: new Date(data.startDate),
+      endTimestamp: new Date(data.endDate),
     });
 
     return txResult;
@@ -170,13 +170,14 @@ export default function SaleInfo({ nft }: Props) {
           /> */}
 
           {/* Input field for buyout price */}
-          <legend className={styles.legend}> sell price </legend>
+          {/* <legend className={styles.legend}> Buyout price </legend> */}
           <input
             className={styles.input}
             type="number"
             step={0.000001}
             {...registerAuction('buyoutPrice')}
           />
+
           <Web3Button
             contractAddress={MARKETPLACE_ADDRESS}
             action={async () => {
@@ -200,7 +201,7 @@ export default function SaleInfo({ nft }: Props) {
               );
             }}
           >
-            Create Auction Listing
+            Create buy Listing
           </Web3Button>
         </div>
       </div>

@@ -443,7 +443,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                     });
                   }}
                 >
-                  Buy at asking price
+                  Buy
                 </Web3Button>
 
                 <div className={styles.traitsContainer}>
