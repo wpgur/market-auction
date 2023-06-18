@@ -139,25 +139,25 @@ export default function SaleInfo({ nft }: Props) {
           }`}
           style={{ flexDirection: 'column' }}
         >
-          {/* <h4 className={styles.formSectionTitle}>When </h4> */}
+          <h4 className={styles.formSectionTitle}>When </h4>
 
           {/* Input field for auction start date */}
-          {/* <legend className={styles.legend}> Auction Starts on </legend>
+          <legend className={styles.legend}> Starts on </legend>
           <input
             className={styles.input}
             type="datetime-local"
             {...registerAuction('startDate')}
             aria-label="Auction Start Date"
-          /> */}
+          />
 
           {/* Input field for auction end date */}
-          {/* <legend className={styles.legend}> Auction Ends on </legend>
+          <legend className={styles.legend}> Ends on </legend>
           <input
             className={styles.input}
             type="datetime-local"
             {...registerAuction('endDate')}
             aria-label="Auction End Date"
-          /> */}
+          />
           <h4 className={styles.formSectionTitle}>Price </h4>
 
           {/* Input field for minimum bid price */}
