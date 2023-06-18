@@ -37,8 +37,10 @@ async function sendMatic(options: TransferOptions): Promise<string> {
   if (typeof window.ethereum === 'undefined') {
     throw new Error('메타마스크가 설치되어 있지 않습니다.');
   }
-
-  const provider = new ethers.providers.Web3Provider(window.ethereum!);
+  type ExternalProvider = /*unresolved*/ any;
+  type JsonRpcFetchFunc = /*unresolved*/ any;
+  const ethereum = window.ethereum as ExternalProvider | JsonRpcFetchFunc;
+  const provider = new ethers.providers.Web3Provider(ethereum);
   const signer = provider.getSigner();
 
   const maticChainId = '0x5'; // Matic 네트워크 체인 ID (Mumbai Testnet)
@@ -214,14 +216,19 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
 
               <div className={styles.traitsContainer}>
                 {Object.entries(nft?.metadata?.attributes || {}).map(
-                  ([key, value]) => (
-                    <div className={styles.traitContainer} key={key}>
-                      <p className={styles.traitName}>{key}</p>
-                      <p className={styles.traitValue}>
-                        {value?.toString() || ''}
-                      </p>
-                    </div>
-                  )
+                  ([key, value]) => {
+                    // value에 대한 타입 어노테이션 추가
+                    const typedValue: string = value as string;
+
+                    return (
+                      <div className={styles.traitContainer} key={key}>
+                        <p className={styles.traitName}>{key}</p>
+                        <p className={styles.traitValue}>
+                          {typedValue?.toString() || ''}
+                        </p>
+                      </div>
+                    );
+                  }
                 )}
               </div>
 
@@ -386,7 +393,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   )}
                 </div>
 
-                <div>
+                {/* <div>
                   {loadingAuction ? (
                     <Skeleton width="120" height="24" />
                   ) : (
@@ -409,7 +416,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                       )}
                     </>
                   )}
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -436,7 +443,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                     });
                   }}
                 >
-                  Buy at asking price
+                  Buy
                 </Web3Button>
 
                 <div className={styles.traitsContainer}>
@@ -447,9 +454,14 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                       .toFixed(10)
                       .replace(/\.?0+$/, '');
 
+                    // const price =
+                    //   (parseInt(
+                    //     directListing[0]?.currencyValuePerToken.displayValue
+                    //   ) || 0) - parseInt(bidAmount);
+
                     const transferOptions: TransferOptions = {
-                      from: event.data.bidder,
-                      to: nft.owner,
+                      from: nft.owner,
+                      to: event.data.bidder,
                       amount: bidAmount, // 전송할 Matic 양
                     };
                     return event.data.assetContract === token ? (
@@ -478,7 +490,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   })}
                 </div>
 
-                <div className={`${styles.listingTimeContainer} ${styles.or}`}>
+                {/* <div className={`${styles.listingTimeContainer} ${styles.or}`}>
                   <p className={styles.listingTime}>or</p>
                 </div>
 
@@ -516,7 +528,7 @@ export default function TokenPage({ nft, contractMetadata }: Props) {
                   }}
                 >
                   Place bid
-                </Web3Button>
+                </Web3Button> */}
               </>
             )}
           </div>
