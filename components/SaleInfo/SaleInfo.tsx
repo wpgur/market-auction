@@ -26,7 +26,7 @@ type AuctionFormData = {
   nftContractAddress: string;
   tokenId: string;
   startDate: string;
-  endDate: Date;
+  endDate: string;
   floorPrice: string;
   buyoutPrice: string;
 };
@@ -60,6 +60,14 @@ export default function SaleInfo({ nft }: Props) {
     const tzoffset = date.getTimezoneOffset() * 60000;
     return new Date(date.getTime() - tzoffset).toISOString().slice(0, 16);
   }
+
+  function getLocalISOStringTwoWeeksLater() {
+    const date = new Date();
+    date.setDate(date.getDate() + 14); // Add 14 days
+    const tzoffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - tzoffset).toISOString().slice(0, 16);
+  }
+
   // Manage form values using react-hook-form library: Auction form
   const { register: registerAuction, handleSubmit: handleSubmitAuction } =
     useForm<AuctionFormData>({
@@ -67,7 +75,7 @@ export default function SaleInfo({ nft }: Props) {
         nftContractAddress: NFT_COLLECTION_ADDRESS,
         tokenId: nft.metadata.id,
         startDate: getLocalISOString(),
-        endDate: new Date(),
+        endDate: getLocalISOStringTwoWeeksLater(),
         floorPrice: '0.0000001',
         buyoutPrice: '0.000001',
       },
@@ -126,7 +134,7 @@ export default function SaleInfo({ nft }: Props) {
         ${tab === 'auction' ? profileStyles.activeTab : ''}`}
             onClick={() => setTab('auction')}
           >
-            Product
+            Auction
           </h3>
         </div>
 
@@ -139,25 +147,25 @@ export default function SaleInfo({ nft }: Props) {
           }`}
           style={{ flexDirection: 'column' }}
         >
-          <h4 className={styles.formSectionTitle}>When </h4>
+          {/* <h4 className={styles.formSectionTitle}>When </h4> */}
 
           {/* Input field for auction start date */}
-          <legend className={styles.legend}> Starts on </legend>
+          {/* <legend className={styles.legend}> Auction Starts on </legend>
           <input
             className={styles.input}
             type="datetime-local"
             {...registerAuction('startDate')}
             aria-label="Auction Start Date"
-          />
+          /> */}
 
           {/* Input field for auction end date */}
-          <legend className={styles.legend}> Ends on </legend>
+          {/* <legend className={styles.legend}> Auction Ends on </legend>
           <input
             className={styles.input}
             type="datetime-local"
             {...registerAuction('endDate')}
             aria-label="Auction End Date"
-          />
+          /> */}
           <h4 className={styles.formSectionTitle}>Price </h4>
 
           {/* Input field for minimum bid price */}
@@ -170,7 +178,7 @@ export default function SaleInfo({ nft }: Props) {
           /> */}
 
           {/* Input field for buyout price */}
-          {/* <legend className={styles.legend}> Buyout price </legend> */}
+          <legend className={styles.legend}> Buyout price </legend>
           <input
             className={styles.input}
             type="number"
@@ -201,7 +209,7 @@ export default function SaleInfo({ nft }: Props) {
               );
             }}
           >
-            Create buy Listing
+            Create Auction Listing
           </Web3Button>
         </div>
       </div>
